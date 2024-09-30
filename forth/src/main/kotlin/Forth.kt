@@ -1,24 +1,39 @@
 class Forth {
-    data class Parsed(val integers: List<Int>, val commands: List<LineItem.Command>)
 
     fun evaluate(
         vararg line: String,
-        acc: Pair<List<Int>, List<LineItem.Command>>,
     ): List<Int> {
-        if (line.isEmpty()) {
-            return emptyList()
-        } else {
-            val first = line.first()
-            val rest = line.drop(1)
-            val (firstInts, firstCommands) = evaluate(first, customCommands)
-
-        }
+        return line[0] // TODO: make work for multi-line
+            .let(::parse)
+            .let(::evaluate)
     }
 
-    private fun evaluate(
-        line: String,
-        customCommands: List<LineItem.Command>,
-    ): Pair<List<Int>, List<LineItem.Command>> {
-        TODO()
+    fun parse(line: String): List<LineItem> = line
+        .split("\\s+".toRegex())
+        .map(::parseWord)
+
+    private fun parseWord(word: String): LineItem = word
+        .toIntOrNull()?.let(LineItem::Number)
+        ?: LineItem.COMMANDS[word]
+        ?: throw Exception("undefined operation")
+
+    private tailrec fun evaluate(
+        lineItems: List<LineItem>,
+    ): List<Int> {
+        if (lineItems.all { it is LineItem.Number }) {
+            return lineItems.map { (it as LineItem.Number).inner }
+        } else {
+            val firstCommandIndex = lineItems.indexOfFirst { it is LineItem.Command }
+            val firstCommand = lineItems[firstCommandIndex] as LineItem.Command
+            val lastNumber = lineItems.getOrNull(firstCommandIndex - 1) as LineItem.Number?
+                ?: throw Exception("empty stack")
+            if (firstCommand.argumentsNeeded > firstCommandIndex) {
+                throw Exception("only one value on the stack")
+            }
+            val evaluated = firstCommand.f(lastNumber)
+            val pre = lineItems.takeWhile { it != firstCommand }.dropLast(1)
+            val post = lineItems.dropWhile { it != firstCommand }.drop(1)
+            return evaluate(pre + evaluated + post)
+        }
     }
 }
