@@ -9,24 +9,25 @@ class Forth {
         .items
         .let(::evaluate)
 
-    private fun parseLine(acc: ParsedLines, line: String): ParsedLines =
-        line
-            .lowercase()
-            .split("\\s+".toRegex())
-            .let { words: List<String> ->
-                if (words.firstOrNull() == ":" && words.lastOrNull() == ";") {
-                    val command = words.drop(1).dropLast(1)
-                    val name = command.firstOrNull()
-                    val value = command.drop(1).flatMap { parseWord(it, acc.commands) }
-                    if (name == null || name.toIntOrNull() != null) throw Exception("illegal operation")
-                    ParsedLines(acc.items, acc.commands + (name to value))
-                } else {
-                    words
-                        .flatMap { parseWord(it, acc.commands) }
-                        .let { ParsedLines(acc.items + it, acc.commands) }
-                }
+    private fun parseLine(acc: ParsedLines, line: String): ParsedLines = line
+        .lowercase()
+        .split("\\s+".toRegex())
+        .let { parseWords(acc, it) }
+
+    private fun parseWords(acc: ParsedLines, words: List<String>): ParsedLines =
+        when {
+            words.firstOrNull() == ":" && words.lastOrNull() == ";" -> {
+                val command = words.drop(1).dropLast(1)
+                val key = command.firstOrNull()
+                val value = command.drop(1).flatMap { parseWord(it, acc.commands) }
+                if (key == null || key.toIntOrNull() != null) throw Exception("illegal operation")
+                ParsedLines(acc.items, acc.commands + (key to value))
             }
 
+            else -> words
+                .flatMap { parseWord(it, acc.commands) }
+                .let { ParsedLines(acc.items + it, acc.commands) }
+        }
 
     private fun parseWord(word: String, commands: Map<String, List<LineItem>>): List<LineItem> = when (
         val int = word.toIntOrNull()
