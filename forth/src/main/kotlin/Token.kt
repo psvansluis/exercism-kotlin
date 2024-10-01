@@ -1,7 +1,7 @@
-sealed class LineItem {
-    class Number(val inner: Int) : LineItem()
+sealed class Token {
+    class Number(val inner: Int) : Token()
 
-    class Operation(val arity: Int, private val f: (List<Int>) -> List<Int>) : LineItem() {
+    class Operation(val arity: Int, private val f: (List<Int>) -> List<Int>) : Token() {
         fun apply(arguments: List<Number>): List<Number> = arguments
             .map(Number::inner)
             .let(f)

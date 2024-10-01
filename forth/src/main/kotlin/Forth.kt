@@ -1,12 +1,12 @@
 class Forth {
     private data class ParsedLines(
-        val items: List<LineItem>,
-        val commands: Map<String, List<LineItem>>,
+        val tokens: List<Token>,
+        val commands: Map<String, List<Token>>,
     )
 
     fun evaluate(vararg line: String): List<Int> = line
         .fold(ParsedLines(listOf(), mapOf()), ::parseLine)
-        .items
+        .tokens
         .let(::evaluate)
 
     private fun parseLine(acc: ParsedLines, line: String): ParsedLines = line
@@ -21,39 +21,39 @@ class Forth {
                 val key = command.firstOrNull()
                 val value = command.drop(1).flatMap { parseWord(it, acc.commands) }
                 if (key == null || key.toIntOrNull() != null) throw Exception("illegal operation")
-                ParsedLines(acc.items, acc.commands + (key to value))
+                ParsedLines(acc.tokens, acc.commands + (key to value))
             }
 
             else -> words
                 .flatMap { parseWord(it, acc.commands) }
-                .let { ParsedLines(acc.items + it, acc.commands) }
+                .let { ParsedLines(acc.tokens + it, acc.commands) }
         }
 
-    private fun parseWord(word: String, commands: Map<String, List<LineItem>>): List<LineItem> = when (
+    private fun parseWord(word: String, commands: Map<String, List<Token>>): List<Token> = when (
         val int = word.toIntOrNull()
     ) {
         null -> commands[word]
-            ?: LineItem.OPERATIONS[word]?.let(::listOf)
+            ?: Token.OPERATIONS[word]?.let(::listOf)
             ?: throw Exception("undefined operation")
 
-        else -> listOf(LineItem.Number(int))
+        else -> listOf(Token.Number(int))
     }
 
 
-    private tailrec fun evaluate(lineItems: List<LineItem>): List<Int> =
-        when (val firstOperationIndex = lineItems.indexOfFirst { it is LineItem.Operation }) {
-            -1 -> lineItems.map { (it as LineItem.Number).inner }
+    private tailrec fun evaluate(tokens: List<Token>): List<Int> =
+        when (val firstOperationIndex = tokens.indexOfFirst { it is Token.Operation }) {
+            -1 -> tokens.map { (it as Token.Number).inner }
             0 -> throw Exception("empty stack")
             else -> {
-                val firstOperation = lineItems[firstOperationIndex] as LineItem.Operation
+                val firstOperation = tokens[firstOperationIndex] as Token.Operation
                 val firstArgIndex = firstOperationIndex - firstOperation.arity
                 if (firstArgIndex < 0) throw Exception("only one value on the stack")
-                val pre = lineItems.take(firstArgIndex)
-                val evaluated = lineItems
+                val pre = tokens.take(firstArgIndex)
+                val evaluated = tokens
                     .slice(firstArgIndex until firstOperationIndex)
-                    .map { it as LineItem.Number }
+                    .map { it as Token.Number }
                     .let(firstOperation::apply)
-                val post = lineItems.drop(firstOperationIndex + 1)
+                val post = tokens.drop(firstOperationIndex + 1)
                 evaluate(pre + evaluated + post)
             }
         }
