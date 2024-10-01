@@ -27,13 +27,11 @@ class Forth {
             else -> {
                 val firstCommand = lineItems[firstCommandIndex] as LineItem.Command
                 val firstArgIndex = firstCommandIndex - firstCommand.arity
-                if (firstArgIndex < 0) {
-                    throw Exception("only one value on the stack")
-                }
+                if (firstArgIndex < 0) throw Exception("only one value on the stack")
                 val pre = lineItems.take(firstArgIndex)
                 val evaluated = lineItems
                     .slice(firstArgIndex until firstCommandIndex)
-                    .let { it as List<LineItem.Number> }
+                    .map { it as LineItem.Number }
                     .let(firstCommand::apply)
                 val post = lineItems.drop(firstCommandIndex + 1)
                 evaluate(pre + evaluated + post)
