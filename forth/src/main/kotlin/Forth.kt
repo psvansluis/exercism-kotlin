@@ -13,8 +13,20 @@ class Forth {
         line
             .lowercase()
             .split("\\s+".toRegex())
-            .flatMap { parseWord(it, acc.commands) }
-            .let { ParsedLines(acc.items + it, acc.commands) }
+            .let { words: List<String> ->
+                if (words.firstOrNull() == ":" && words.lastOrNull() == ";") {
+                    val command = words.drop(1).dropLast(1)
+                    val name = command.firstOrNull()
+                    val value = command.drop(1).flatMap { parseWord(it, acc.commands) }
+                    if (name == null || name.toIntOrNull() != null) throw Exception("illegal operation")
+                    ParsedLines(acc.items, acc.commands + (name to value))
+                } else {
+                    words
+                        .flatMap { parseWord(it, acc.commands) }
+                        .let { ParsedLines(acc.items + it, acc.commands) }
+                }
+            }
+
 
     private fun parseWord(word: String, commands: Map<String, List<LineItem>>): List<LineItem> = when (
         val int = word.toIntOrNull()
