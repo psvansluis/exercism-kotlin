@@ -1,27 +1,23 @@
 sealed class LineItem {
-    class Number(val inner: Int) : LineItem() {
+    class Number(val inner: Int) : LineItem()
 
-    }
-
-    class Command(val argumentsNeeded: Int = 1, val f: (Number) -> LineItem) : LineItem()
+    class Command(val arity: Int, val f: (List<Int>) -> List<Int>) : LineItem()
 
     companion object {
         val COMMANDS = mapOf<String, Command>(
-            "+" to Command(argumentsNeeded = 2, f = { a: Number -> Command { b: Number -> a + b } }),
-            "-" to Command(argumentsNeeded = 2, f = { a: Number -> Command { b: Number -> b - a } }),
-            "*" to Command(argumentsNeeded = 2, f = { a: Number -> Command { b: Number -> a * b } }),
-            "*" to Command(argumentsNeeded = 2, f = { a: Number -> Command { b: Number -> a * b } }),
-            "/" to Command(argumentsNeeded = 2, f = { a: Number ->
-                when (a.inner) {
+            "+" to Command(2) { listOf(it[0] + it[1]) },
+            "-" to Command(2) { listOf(it[0] - it[1]) },
+            "*" to Command(2) { listOf(it[0] * it[1]) },
+            "/" to Command(2) {
+                when (val b = it[1]) {
                     0 -> throw Exception("divide by zero")
-                    else -> Command { b: Number -> b / a }
+                    else -> listOf(it[0] / b)
                 }
-            }),
+            },
+            "dup" to Command(1) { listOf(it[0], it[0]) },
+            "drop" to Command(1) { listOf() },
+            "swap" to Command(2) { listOf(it[1], it[0]) },
+            "over" to Command(2) { listOf(it[0], it[1], it[0]) },
         )
     }
 }
-
-operator fun LineItem.Number.plus(other: LineItem.Number): LineItem.Number = LineItem.Number(this.inner + other.inner)
-operator fun LineItem.Number.minus(other: LineItem.Number): LineItem.Number = LineItem.Number(this.inner - other.inner)
-operator fun LineItem.Number.times(other: LineItem.Number): LineItem.Number = LineItem.Number(this.inner * other.inner)
-operator fun LineItem.Number.div(other: LineItem.Number): LineItem.Number = LineItem.Number(this.inner / other.inner)
