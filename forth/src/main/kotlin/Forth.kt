@@ -4,8 +4,8 @@ class Forth {
         val commands: Map<String, List<LineItem>>,
     )
 
-    fun evaluate(vararg line: String): List<Int> = line[0] // TODO: make work for multi-line
-        .let { parseLine(ParsedLines(listOf(), mapOf()), it) }
+    fun evaluate(vararg line: String): List<Int> = line
+        .fold(ParsedLines(listOf(), mapOf()), ::parseLine)
         .items
         .let(::evaluate)
 
@@ -13,13 +13,19 @@ class Forth {
         line
             .lowercase()
             .split("\\s+".toRegex())
-            .map(::parseWord)
+            .flatMap { parseWord(it, acc.commands) }
             .let { ParsedLines(acc.items + it, acc.commands) }
 
-    private fun parseWord(word: String): LineItem = word
-        .toIntOrNull()?.let(LineItem::Number)
-        ?: LineItem.OPERATIONS[word]
-        ?: throw Exception("undefined operation")
+    private fun parseWord(word: String, commands: Map<String, List<LineItem>>): List<LineItem> = when (
+        val int = word.toIntOrNull()
+    ) {
+        null -> commands[word]
+            ?: LineItem.OPERATIONS[word]?.let(::listOf)
+            ?: throw Exception("undefined operation")
+
+        else -> listOf(LineItem.Number(int))
+    }
+
 
     private tailrec fun evaluate(lineItems: List<LineItem>): List<Int> =
         when (val firstOperationIndex = lineItems.indexOfFirst { it is LineItem.Operation }) {
