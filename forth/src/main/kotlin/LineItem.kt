@@ -1,7 +1,12 @@
 sealed class LineItem {
     class Number(val inner: Int) : LineItem()
 
-    class Command(val arity: Int, val f: (List<Int>) -> List<Int>) : LineItem()
+    class Command(val arity: Int, val f: (List<Int>) -> List<Int>) : LineItem() {
+        fun apply(arguments: List<Number>): List<Number> = arguments
+            .map(Number::inner)
+            .let(f)
+            .map(::Number)
+    }
 
     companion object {
         val COMMANDS = mapOf<String, Command>(

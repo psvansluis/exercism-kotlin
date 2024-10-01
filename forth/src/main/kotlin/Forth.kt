@@ -20,9 +20,9 @@ class Forth {
 
     private tailrec fun evaluate(
         lineItems: List<LineItem>,
-    ): List<Int> {
+    ): List<Int> =
         when (val firstCommandIndex = lineItems.indexOfFirst { it is LineItem.Command }) {
-            -1 -> return lineItems.map { (it as LineItem.Number).inner }
+            -1 -> lineItems.map { (it as LineItem.Number).inner }
             0 -> throw Exception("empty stack")
             else -> {
                 val firstCommand = lineItems[firstCommandIndex] as LineItem.Command
@@ -31,15 +31,13 @@ class Forth {
                     throw Exception("only one value on the stack")
                 }
                 val pre = lineItems.take(firstArgIndex)
-                val evaluated =
-                    lineItems
-                        .slice(firstArgIndex until firstCommandIndex)
-                        .map { (it as LineItem.Number).inner }
-                        .let(firstCommand.f)
-                        .map(LineItem::Number)
+                val evaluated = lineItems
+                    .slice(firstArgIndex until firstCommandIndex)
+                    .let { it as List<LineItem.Number> }
+                    .let(firstCommand::apply)
                 val post = lineItems.drop(firstCommandIndex + 1)
-                return evaluate(pre + evaluated + post)
+                evaluate(pre + evaluated + post)
             }
         }
-    }
+
 }
