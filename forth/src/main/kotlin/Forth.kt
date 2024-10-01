@@ -21,25 +21,25 @@ class Forth {
     private tailrec fun evaluate(
         lineItems: List<LineItem>,
     ): List<Int> {
-        if (lineItems.all { it is LineItem.Number }) {
-            return lineItems.map { (it as LineItem.Number).inner }
-        } else {
-            val firstCommandIndex = lineItems.indexOfFirst { it is LineItem.Command }
-            if (firstCommandIndex == 0) {
-                throw Exception("empty stack")
+        when (val firstCommandIndex = lineItems.indexOfFirst { it is LineItem.Command }) {
+            -1 -> return lineItems.map { (it as LineItem.Number).inner }
+            0 -> throw Exception("empty stack")
+            else -> {
+                val firstCommand = lineItems[firstCommandIndex] as LineItem.Command
+                val firstArgIndex = firstCommandIndex - firstCommand.arity
+                if (firstArgIndex < 0) {
+                    throw Exception("only one value on the stack")
+                }
+                val pre = lineItems.take(firstArgIndex)
+                val evaluated =
+                    lineItems
+                        .slice(firstArgIndex until firstCommandIndex)
+                        .map { (it as LineItem.Number).inner }
+                        .let(firstCommand.f)
+                        .map(LineItem::Number)
+                val post = lineItems.drop(firstCommandIndex + 1)
+                return evaluate(pre + evaluated + post)
             }
-            val firstCommand = lineItems[firstCommandIndex] as LineItem.Command
-            if (firstCommand.arity > firstCommandIndex) {
-                throw Exception("only one value on the stack")
-            }
-            val numbersForCalculation = lineItems
-                .slice((firstCommandIndex - firstCommand.arity) until firstCommandIndex)
-            val evaluated = firstCommand
-                .f(numbersForCalculation.map { (it as LineItem.Number).inner })
-                .map(LineItem::Number)
-            val pre = lineItems.takeWhile { it != firstCommand }.dropLast(firstCommand.arity)
-            val post = lineItems.dropWhile { it != firstCommand }.drop(1)
-            return evaluate(pre + evaluated + post)
         }
     }
 }
