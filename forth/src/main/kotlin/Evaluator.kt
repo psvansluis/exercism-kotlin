@@ -1,4 +1,4 @@
-class Chunked(tokens: List<Token>) {
+class Evaluator(tokens: List<Token>) {
     private val pre: List<Token.Number>
     private val args: List<Token.Number>
     private val operation: Token.Operation? =
@@ -17,6 +17,6 @@ class Chunked(tokens: List<Token>) {
         operation == null -> pre.map(Token.Number::inner)
         args.isEmpty() -> throw Exception("empty stack")
         args.size < operation.arity -> throw Exception("only one value on the stack")
-        else -> Chunked(pre + operation.apply(args) + post).evaluate()
+        else -> Evaluator(pre + operation.apply(args) + post).evaluate()
     }
 }
