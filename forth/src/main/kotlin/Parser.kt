@@ -8,25 +8,21 @@ class Parser(
         .split("\\s+".toRegex())
         .let(::parseWords)
 
-    private fun parseWords(words: List<String>): Parser =
-        when {
-            words.firstOrNull() == ":" && words.lastOrNull() == ";" -> with(words.drop(1).dropLast(1)) {
-                val key = firstOrNull()?.takeIf { it.toIntOrNull() == null }
-                    ?: throw Exception("illegal operation")
-                val value = drop(1).flatMap(::parseWord)
-                this@Parser + (key to value)
-            }
+    private fun parseWords(words: List<String>): Parser = when {
+        words.firstOrNull() == ":" && words.lastOrNull() == ";" -> this + parseCommand(words)
+        else -> this + parseTokens(words)
+    }
 
-            else -> this + words.flatMap(::parseWord)
-        }
+    private fun parseCommand(words: List<String>): Pair<String, List<Token>> = with(words.drop(1).dropLast(1)) {
+        val key = firstOrNull()?.takeIf { it.toIntOrNull() == null } ?: throw Exception("illegal operation")
+        val value = parseTokens(drop(1))
+        (key to value)
+    }
 
-    private fun parseWord(word: String): List<Token> = when (
-        val int = word.toIntOrNull()
-    ) {
-        null -> commands[word]
-            ?: Token.OPERATIONS[word]?.let(::listOf)
-            ?: throw Exception("undefined operation")
+    private fun parseTokens(words: List<String>): List<Token> = words.flatMap(this::parseTokens)
 
+    private fun parseTokens(word: String): List<Token> = when (val int = word.toIntOrNull()) {
+        null -> commands[word] ?: Token.OPERATIONS[word]?.let(::listOf) ?: throw Exception("undefined operation")
         else -> listOf(Token.Number(int))
     }
 

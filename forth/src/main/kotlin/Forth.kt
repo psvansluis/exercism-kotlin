@@ -1,5 +1,5 @@
 class Forth {
     fun evaluate(vararg line: String): List<Int> = line
-        .fold(Parser()) { acc, it -> acc.parseLine(it) }
+        .fold(Parser(), Parser::parseLine)
         .let { Evaluator(it.tokens).evaluate() }
 }
